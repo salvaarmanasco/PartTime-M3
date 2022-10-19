@@ -108,6 +108,42 @@ $Promise.prototype._callHandlers = function () {
   }
 };
 
+$Promise.resolve = function (value) {
+  if (value instanceof $Promise) {
+    return value;
+  }
+  const promise = new $Promise(() => {});
+  promise._internalResolve(value);
+  return promise;
+};
+
+$Promise.all = function (array) {
+  if (!Array.isArray(array)) {
+    throw new TypeError("deberia ser un array");
+  }
+  const promise = new $Promise((resolve, reject) => {
+    const promiseArray = array.map((p) => $Promise.resolve(p));
+    const result = Array(array.length);
+    let pendingCount = array.length;
+    promiseArray.forEach((e, i) =>
+      e.then(
+        (value) => {
+          result[i] = value;
+          pendingCount--;
+          if (pendingCount === 0) {
+            resolve(result);
+          }
+        },
+        (error) => {
+          reject(error);
+        }
+      )
+    );
+  });
+
+  return promise;
+};
+
 module.exports = $Promise;
 
 /*-------------------------------------------------------
